@@ -1,11 +1,17 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { connect, ConnectedProps } from "react-redux";
 import Container from "@material-ui/core/Container";
 import { makeStyles } from "@material-ui/core/styles";
 import Grid from "@material-ui/core/Grid";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
+import Checkbox from "@material-ui/core/Checkbox";
+import FormControlLabel from "@material-ui/core/FormControlLabel";
+import FormGroup from "@material-ui/core/FormGroup";
+import IconButton from "@material-ui/core/IconButton";
+import Popover from "@material-ui/core/Popover";
 import InfoIcon from "@material-ui/icons/Info";
+import FilterListIcon from "@material-ui/icons/FilterList";
 import Alert from "@material-ui/lab/Alert";
 import AlertTitle from "@material-ui/lab/AlertTitle";
 import {
@@ -15,9 +21,15 @@ import {
   deleteQueueAsync,
 } from "../actions/queuesActions";
 import { listQueueStatsAsync } from "../actions/queueStatsActions";
-import { dailyStatsKeyChange } from "../actions/settingsActions";
+import {
+  dailyStatsKeyChange,
+  queueSizeVisibleSeriesChange,
+} from "../actions/settingsActions";
 import { AppState } from "../store";
-import QueueSizeChart from "../components/QueueSizeChart";
+import QueueSizeChart, {
+  queueSizeSeriesConfig,
+  QueueSizeStatusKey,
+} from "../components/QueueSizeChart";
 import ProcessedTasksChart from "../components/ProcessedTasksChart";
 import QueuesOverviewTable from "../components/QueuesOverviewTable";
 import Tooltip from "../components/Tooltip";
@@ -61,6 +73,12 @@ const useStyles = makeStyles((theme) => ({
   tableContainer: {
     marginBottom: theme.spacing(2),
   },
+  filterButton: {
+    marginLeft: theme.spacing(1),
+  },
+  popoverContent: {
+    padding: theme.spacing(2),
+  },
 }));
 
 function mapStateToProps(state: AppState) {
@@ -74,6 +92,7 @@ function mapStateToProps(state: AppState) {
     pollInterval: state.settings.pollInterval,
     queueStats: state.queueStats.data,
     dailyStatsKey: state.settings.dailyStatsChartType,
+    visibleQueueSizeSeries: state.settings.queueSizeVisibleSeries,
   };
 }
 
@@ -84,6 +103,7 @@ const mapDispatchToProps = {
   deleteQueueAsync,
   listQueueStatsAsync,
   dailyStatsKeyChange,
+  queueSizeVisibleSeriesChange,
 };
 
 const connector = connect(mapStateToProps, mapDispatchToProps);
@@ -93,15 +113,18 @@ type Props = ConnectedProps<typeof connector>;
 export type DailyStatsKey = "today" | "last-7d" | "last-30d" | "last-90d";
 export const defaultDailyStatsKey = "last-7d";
 
-function DashboardView(props: Props) {
+export function DashboardView(props: Props) {
   const {
     pollInterval,
     listQueuesAsync,
     queues,
     listQueueStatsAsync,
     dailyStatsKey,
+    visibleQueueSizeSeries,
   } = props;
   const classes = useStyles();
+  const [queueSizeFilterAnchor, setQueueSizeFilterAnchor] =
+    useState<HTMLElement | null>(null);
 
   usePolling(listQueuesAsync, pollInterval);
 
@@ -121,6 +144,33 @@ function DashboardView(props: Props) {
     failed: q.failed,
   }));
 
+  const handleQueueSizeFilterClose = () => {
+    setQueueSizeFilterAnchor(null);
+  };
+
+  const handleQueueSizeSeriesToggle = (seriesKey: QueueSizeStatusKey) => {
+    props.queueSizeVisibleSeriesChange(
+      visibleQueueSizeSeries.includes(seriesKey)
+        ? visibleQueueSizeSeries.filter((key) => key !== seriesKey)
+        : queueSizeSeriesConfig
+            .map((series) => series.key)
+            .filter(
+              (key) => key === seriesKey || visibleQueueSizeSeries.includes(key)
+            )
+    );
+  };
+  const allQueueSizeSeries = queueSizeSeriesConfig.map((series) => series.key);
+  const allQueueSizeSeriesSelected =
+    visibleQueueSizeSeries.length === allQueueSizeSeries.length;
+  const someQueueSizeSeriesSelected =
+    visibleQueueSizeSeries.length > 0 && !allQueueSizeSeriesSelected;
+
+  const handleToggleAllQueueSizeSeries = () => {
+    props.queueSizeVisibleSeriesChange(
+      allQueueSizeSeriesSelected ? [] : allQueueSizeSeries
+    );
+  };
+
   return (
     <Container maxWidth="lg" className={classes.container}>
       <Grid container spacing={3}>
@@ -133,11 +183,23 @@ function DashboardView(props: Props) {
             </Alert>
           </Grid>
         )}
-        <Grid item xs={6}>
+        <Grid item xs={12} md={6}>
           <Paper className={classes.paper} variant="outlined">
             <div className={classes.chartHeader}>
               <div className={classes.chartHeaderTitle}>
                 <Typography variant="h6">Queue Size</Typography>
+                <Tooltip title="Filter queue size statuses">
+                  <IconButton
+                    aria-label="filter queue size statuses"
+                    size="small"
+                    onClick={(event) =>
+                      setQueueSizeFilterAnchor(event.currentTarget)
+                    }
+                    className={classes.filterButton}
+                  >
+                    <FilterListIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip
                   title={
                     <div>
@@ -171,13 +233,67 @@ function DashboardView(props: Props) {
                 </Tooltip>
               </div>
             </div>
+            <Popover
+              id={
+                queueSizeFilterAnchor ? "queue-size-status-filter-popover" : undefined
+              }
+              open={Boolean(queueSizeFilterAnchor)}
+              anchorEl={queueSizeFilterAnchor}
+              onClose={handleQueueSizeFilterClose}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
+            >
+              <div className={classes.popoverContent}>
+                <FormGroup>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        color="primary"
+                        checked={allQueueSizeSeriesSelected}
+                        indeterminate={someQueueSizeSeriesSelected}
+                        onChange={handleToggleAllQueueSizeSeries}
+                        name="select-all-queue-size-statuses"
+                      />
+                    }
+                    label="Select all"
+                  />
+                  {queueSizeSeriesConfig.map((series) => (
+                    <FormControlLabel
+                      key={series.key}
+                      control={
+                        <Checkbox
+                          size="small"
+                          color="primary"
+                          checked={visibleQueueSizeSeries.includes(series.key)}
+                          onChange={() =>
+                            handleQueueSizeSeriesToggle(series.key)
+                          }
+                          name={series.key}
+                        />
+                      }
+                      label={series.label}
+                    />
+                  ))}
+                </FormGroup>
+              </div>
+            </Popover>
             <div className={classes.chartContainer}>
-              <QueueSizeChart data={queues} />
+              <QueueSizeChart
+                data={queues}
+                visibleSeriesKeys={visibleQueueSizeSeries}
+              />
             </div>
           </Paper>
         </Grid>
 
-        <Grid item xs={6}>
+        <Grid item xs={12} md={6} >
           <Paper className={classes.paper} variant="outlined">
             <div className={classes.chartHeader}>
               <div className={classes.chartHeaderTitle}>

@@ -1,11 +1,14 @@
 import { ThemePreference } from "../reducers/settingsReducer";
 import { DailyStatsKey } from "../views/DashboardView";
+import { QueueSizeStatusKey } from "../components/QueueSizeChart";
 // List of settings related action types.
 export const POLL_INTERVAL_CHANGE = "POLL_INTERVAL_CHANGE";
 export const THEME_PREFERENCE_CHANGE = "THEME_PREFERENCE_CHANGE";
 export const TOGGLE_DRAWER = "TOGGLE_DRAWER";
 export const TASK_ROWS_PER_PAGE_CHANGE = "TASK_ROWS_PER_PAGE_CHANGE";
 export const DAILY_STATS_KEY_CHANGE = "DAILY_STATS_KEY_CHANGE";
+export const QUEUE_SIZE_VISIBLE_SERIES_CHANGE =
+  "QUEUE_SIZE_VISIBLE_SERIES_CHANGE";
 
 interface PollIntervalChangeAction {
   type: typeof POLL_INTERVAL_CHANGE;
@@ -31,13 +34,19 @@ interface DailyStatsKeyChange {
   value: DailyStatsKey;
 }
 
+interface QueueSizeVisibleSeriesChange {
+  type: typeof QUEUE_SIZE_VISIBLE_SERIES_CHANGE;
+  value: QueueSizeStatusKey[];
+}
+
 // Union of all settings related action types.
 export type SettingsActionTypes =
   | PollIntervalChangeAction
   | ThemePreferenceChangeAction
   | ToggleDrawerAction
   | TaskRowsPerPageChange
-  | DailyStatsKeyChange;
+  | DailyStatsKeyChange
+  | QueueSizeVisibleSeriesChange;
 
 export function pollIntervalChange(value: number) {
   return {
@@ -68,5 +77,12 @@ export function dailyStatsKeyChange(value: DailyStatsKey) {
   return {
     type: DAILY_STATS_KEY_CHANGE,
     value,
-  }
+  };
+}
+
+export function queueSizeVisibleSeriesChange(value: QueueSizeStatusKey[]) {
+  return {
+    type: QUEUE_SIZE_VISIBLE_SERIES_CHANGE,
+    value,
+  };
 }
