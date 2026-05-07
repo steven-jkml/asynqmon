@@ -9,7 +9,11 @@ import TableContainer from "@material-ui/core/TableContainer";
 import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
+import FormControl from "@material-ui/core/FormControl";
 import IconButton from "@material-ui/core/IconButton";
+import MenuItem from "@material-ui/core/MenuItem";
+import Select from "@material-ui/core/Select";
+import TextField from "@material-ui/core/TextField";
 import Tooltip from "@material-ui/core/Tooltip";
 import PauseCircleFilledIcon from "@material-ui/icons/PauseCircleFilled";
 import PlayCircleFilledIcon from "@material-ui/icons/PlayCircleFilled";
@@ -23,6 +27,18 @@ import prettyBytes from "pretty-bytes";
 import { percentage } from "../utils";
 
 const useStyles = makeStyles((theme) => ({
+  controls: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+  },
+  filterControl: {
+    minWidth: 180,
+  },
+  searchControl: {
+    minWidth: 220,
+  },
   table: {
     minWidth: 650,
   },
@@ -106,10 +122,20 @@ function sortQueues(
   return copy;
 }
 
+export function deriveQueuePrefix(queueName: string): string {
+  const segments = queueName.split("_");
+  if (segments.length < 2) {
+    return queueName;
+  }
+  return `${segments[0]}_${segments[1]}`;
+}
+
 export default function QueuesOverviewTable(props: Props) {
   const classes = useStyles();
   const [sortBy, setSortBy] = useState<SortBy>(SortBy.Queue);
   const [sortDir, setSortDir] = useState<SortDirection>(SortDirection.Asc);
+  const [selectedPrefix, setSelectedPrefix] = useState<string>("all");
+  const [queueSearchText, setQueueSearchText] = useState<string>("");
   const [queueToDelete, setQueueToDelete] = useState<QueueWithMetadata | null>(
     null
   );
@@ -177,8 +203,52 @@ export default function QueuesOverviewTable(props: Props) {
     setQueueToDelete(null);
   };
 
+  const prefixOptions = Array.from(
+    new Set(props.queues.map((queue) => deriveQueuePrefix(queue.queue)))
+  ).sort();
+  const normalizedQueueSearchText = queueSearchText.trim().toLowerCase();
+  const filteredQueues = props.queues.filter((queue) => {
+    return (
+      (selectedPrefix === "all" ||
+        deriveQueuePrefix(queue.queue) === selectedPrefix) &&
+      (normalizedQueueSearchText === "" ||
+        queue.queue.toLowerCase().includes(normalizedQueueSearchText))
+    );
+  });
+
   return (
     <React.Fragment>
+      <div className={classes.controls}>
+        <TextField
+          value={queueSearchText}
+          onChange={(event) => setQueueSearchText(event.target.value)}
+          variant="outlined"
+          size="small"
+          placeholder="Search queues"
+          className={classes.searchControl}
+          inputProps={{ "aria-label": "filter queues by text" }}
+        />
+        <FormControl
+          variant="outlined"
+          size="small"
+          className={classes.filterControl}
+        >
+          <Select
+            value={selectedPrefix}
+            onChange={(event) => setSelectedPrefix(event.target.value as string)}
+            displayEmpty
+            inputProps={{ "aria-label": "filter queues by prefix" }}
+            SelectDisplayProps={{ "aria-label": "filter queues by prefix" }}
+          >
+            <MenuItem value="all">All prefixes</MenuItem>
+            {prefixOptions.map((prefix) => (
+              <MenuItem key={prefix} value={prefix}>
+                {prefix}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </div>
       <TableContainer>
         <Table className={classes.table} aria-label="queues overview table">
           <TableHead>
@@ -210,7 +280,7 @@ export default function QueuesOverviewTable(props: Props) {
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortQueues(props.queues, cmpFunc).map((q) => (
+            {sortQueues(filteredQueues, cmpFunc).map((q) => (
               <Row
                 key={q.queue}
                 queue={q}

@@ -1,12 +1,17 @@
 import {
   DAILY_STATS_KEY_CHANGE,
   POLL_INTERVAL_CHANGE,
+  QUEUE_SIZE_VISIBLE_SERIES_CHANGE,
   SettingsActionTypes,
   TASK_ROWS_PER_PAGE_CHANGE,
   THEME_PREFERENCE_CHANGE,
   TOGGLE_DRAWER,
 } from "../actions/settingsActions";
-import { defaultPageSize } from "../components/TablePaginationActions"
+import {
+  queueSizeSeriesConfig,
+  QueueSizeStatusKey,
+} from "../components/QueueSizeChart";
+import { defaultPageSize } from "../components/TablePaginationActions";
 import { DailyStatsKey, defaultDailyStatsKey } from "../views/DashboardView";
 
 export enum ThemePreference {
@@ -30,6 +35,9 @@ export interface SettingsState {
 
   // Type of the chart displayed for "Processed Tasks" section in dashboard.
   dailyStatsChartType: DailyStatsKey;
+
+  // Visible task statuses in the Queue Size chart.
+  queueSizeVisibleSeries: QueueSizeStatusKey[];
 }
 
 export const initialState: SettingsState = {
@@ -38,6 +46,7 @@ export const initialState: SettingsState = {
   isDrawerOpen: true,
   taskRowsPerPage: defaultPageSize,
   dailyStatsChartType: defaultDailyStatsKey,
+  queueSizeVisibleSeries: queueSizeSeriesConfig.map((series) => series.key),
 };
 
 function settingsReducer(
@@ -67,13 +76,19 @@ function settingsReducer(
       return {
         ...state,
         taskRowsPerPage: action.value,
-      }
+      };
 
     case DAILY_STATS_KEY_CHANGE:
       return {
         ...state,
         dailyStatsChartType: action.value,
-      }
+      };
+
+    case QUEUE_SIZE_VISIBLE_SERIES_CHANGE:
+      return {
+        ...state,
+        queueSizeVisibleSeries: action.value,
+      };
 
     default:
       return state;

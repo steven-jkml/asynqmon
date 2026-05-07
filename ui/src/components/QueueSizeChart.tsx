@@ -13,8 +13,32 @@ import { useHistory } from "react-router-dom";
 import { useTheme } from "@material-ui/core/styles";
 import { queueDetailsPath } from "../paths";
 
+export type QueueSizeStatusKey =
+  | "active"
+  | "pending"
+  | "aggregating"
+  | "scheduled"
+  | "retry"
+  | "archived"
+  | "completed";
+
+export const queueSizeSeriesConfig: {
+  key: QueueSizeStatusKey;
+  label: string;
+  fill: string;
+}[] = [
+  { key: "active", label: "Active", fill: "#1967d2" },
+  { key: "pending", label: "Pending", fill: "#669df6" },
+  { key: "aggregating", label: "Aggregating", fill: "#e69138" },
+  { key: "scheduled", label: "Scheduled", fill: "#fdd663" },
+  { key: "retry", label: "Retry", fill: "#f666a9" },
+  { key: "archived", label: "Archived", fill: "#ac4776" },
+  { key: "completed", label: "Completed", fill: "#4bb543" },
+];
+
 interface Props {
   data: TaskBreakdown[];
+  visibleSeriesKeys: QueueSizeStatusKey[];
 }
 
 interface TaskBreakdown {
@@ -54,13 +78,17 @@ function QueueSizeChart(props: Props) {
         <YAxis stroke={theme.palette.text.secondary} />
         <Tooltip />
         <Legend />
-        <Bar dataKey="active" stackId="a" fill="#1967d2" />
-        <Bar dataKey="pending" stackId="a" fill="#669df6" />
-        <Bar dataKey="aggregating" stackId="a" fill="#e69138" />
-        <Bar dataKey="scheduled" stackId="a" fill="#fdd663" />
-        <Bar dataKey="retry" stackId="a" fill="#f666a9" />
-        <Bar dataKey="archived" stackId="a" fill="#ac4776" />
-        <Bar dataKey="completed" stackId="a" fill="#4bb543" />
+        {queueSizeSeriesConfig
+          .filter((series) => props.visibleSeriesKeys.includes(series.key))
+          .map((series) => (
+            <Bar
+              key={series.key}
+              dataKey={series.key}
+              name={series.label}
+              stackId="a"
+              fill={series.fill}
+            />
+          ))}
       </BarChart>
     </ResponsiveContainer>
   );

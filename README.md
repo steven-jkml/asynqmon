@@ -1,5 +1,13 @@
 <img src="https://user-images.githubusercontent.com/11155743/114745460-57760500-9d57-11eb-9a2c-43fa88171807.png" alt="Asynqmon logo" width="360px" />
 
+# Fork of hibiken/asynqmon.
+Ref: https://github.com/hibiken/asynqmon
+
+Last commit: d1b889456de3c98c22de24642b6f836a29da3140
+
+Last release version v0.7.2
+
+
 # Web UI for monitoring & administering [Asynq](https://github.com/hibiken/asynq) task queue
 
 ## Overview

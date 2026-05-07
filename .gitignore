@@ -24,6 +24,7 @@ package-json.lock
 *.out
 
 # binaries
+.cache
 /cmd/asynqmon/asynqmon
 /asynqmon
 /api
