@@ -27,6 +27,7 @@ package-json.lock
 .cache
 /cmd/asynqmon/asynqmon
 /asynqmon
+/prometheus
 /api
 dist/
 

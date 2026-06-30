@@ -18,6 +18,17 @@ api:
 build: assets
 	go build -o asynqmon ./cmd/asynqmon
 
+# Build a release binary.
+build-local-prometheus:
+	go build ./test/example/prometheus
+
+# Run
+run-local-asynqmon:
+	./asynqmon --enable-metrics-exporter --prometheus-addr=http://localhost:9191
+
+run-local-prometheus:
+	./prometheus --port=9191
+
 # Build image and run Asynqmon server (with default settings).
 docker:
 	docker build -t $(LOCAL_IMAGE) .

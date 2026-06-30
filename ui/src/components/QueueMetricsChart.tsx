@@ -7,7 +7,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
 import { Metrics } from "../api";
@@ -57,6 +56,53 @@ const lineColors = [
   "#323232",
 ];
 
+interface TooltipEntry {
+  color?: string;
+  dataKey?: string | number;
+  name?: string | number;
+  value?: number | string;
+}
+
+interface CustomTooltipProps {
+  active?: boolean;
+  label?: number;
+  payload?: TooltipEntry[];
+}
+
+function CustomTooltip(props: CustomTooltipProps) {
+  if (!props.active || !props.payload?.length || props.label === undefined) {
+    return null;
+  }
+
+  const nonZeroPayload = props.payload.filter((entry) => Number(entry.value) !== 0);
+  if (nonZeroPayload.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        backgroundColor: "#fff",
+        border: "1px solid #ccc",
+        margin: 0,
+        padding: "10px",
+      }}
+    >
+      <p style={{ margin: "0 0 8px" }}>
+        {new Date(props.label * 1000).toLocaleTimeString()}
+      </p>
+      {nonZeroPayload.map((entry) => {
+        const queueName = entry.name || entry.dataKey;
+        return (
+          <p key={String(queueName)} style={{ color: entry.color, margin: "4px 0" }}>
+            {queueName}: {entry.value}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 function QueueMetricsChart(props: Props) {
   const theme = useTheme();
 
@@ -82,11 +128,11 @@ function QueueMetricsChart(props: Props) {
           stroke={theme.palette.text.secondary}
         />
         <Tooltip
+          content={<CustomTooltip />}
           labelFormatter={(timestamp: number) => {
             return new Date(timestamp * 1000).toLocaleTimeString();
           }}
         />
-        <Legend />
         {keys.map((key, idx) => (
           <Line
             key={key}
